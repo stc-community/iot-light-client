@@ -2,6 +2,7 @@ package ignite
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -16,21 +17,34 @@ import (
 )
 
 type Payload struct {
-	PayloadType string
-	Name        string
-	Path        string
-	Data        string
+	PayloadType string `json:"payload_type"`
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	Data        string `json:"data"`
+	Result      string `json:"result"`
 }
 
 func Event() {
 	client, err := cosmosclient.New(context.Background(),
 		cosmosclient.WithNodeAddress(confer.Cfg.NodeAddress),
-		cosmosclient.WithUseFaucet(confer.Cfg.FaucetAddress, "", 1000),
 	)
-	account, _, err := client.AccountRegistry.Create(confer.Cfg.AccountName)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(" cosmosclient.New(context.Background() err", err)
 	}
+	account, _ := client.Account(confer.Cfg.AccountName)
+	if account.Record == nil {
+		account, _, err = client.AccountRegistry.Create(confer.Cfg.AccountName)
+		if err != nil {
+			log.Fatal("AccountRegistry", err)
+		}
+	}
+	address, _ := account.Address("cosmos")
+	log.Println("address: ", address)
+	res, err := resty.New().R().
+		SetHeader("Content-Type", "application/json").
+		SetBody([]byte(fmt.Sprintf(`{"denom":"stake","address":"%s"}`, address))).
+		Post(confer.Cfg.FaucetAddress)
+	fmt.Println("Faucet:", res.String(), err)
 	_ = client.RPC.Start()
 	eventCh, err := client.RPC.Subscribe(context.Background(), "", types.QueryForEvent(types.EventTx).String())
 	if err != nil {
@@ -51,24 +65,58 @@ func Event() {
 				if strings.Compare(val.Type, "stccommunity.iotdepinprotocol.iotdepinprotocol.EventPb") == 0 {
 					eventPb, _ := sdk.ParseTypedEvent(val)
 					eventPB := eventPb.(*ttypes.EventPb)
-					if eventPB.Topic == confer.Cfg.AccountName && eventPB.PubType == "request" {
+					if eventPB.DeviceName == confer.Cfg.AccountName {
 						var payload Payload
-						json.Unmarshal([]byte(eventPB.Payload), &payload)
+						// Payload需要base64解密
+						payloadBase64, err := base64.StdEncoding.DecodeString(eventPB.Payload)
+						if err != nil {
+							log.Println("base64.StdEncoding.DecodeString(eventPB.Payload) err:", err)
+							break
+						}
+						log.Println("accept payload:", string(payloadBase64))
+						err = json.Unmarshal(payloadBase64, &payload)
+						if err != nil {
+							log.Println("json.Unmarshal(payloadBase64, &payload):", err)
+							break
+						}
 						switch strings.ToLower(payload.PayloadType) {
 						case "publish":
-							res, _ := publish(payload.Name, payload.Path, payload.Data)
-							client.BroadcastTx(context.Background(), account, &ttypes.MsgCreateKv{
-								Creator: account.Name,
-								Index:   "result",
-								Value:   res,
+							res, err := publish(payload.Name, payload.Path, payload.Data)
+							if err != nil {
+								log.Println("publish(payload.Name, payload.Path, payload.Data):", err)
+								break
+							}
+							log.Println("publish:==", payload.Name, payload.Path, res, err)
+							//payload.Result = base64.StdEncoding.EncodeToString([]byte(res))
+							payload.Result = res
+							payloadBytes, _ := json.Marshal(payload)
+							response, err := client.BroadcastTx(context.Background(), account, &ttypes.MsgUpdateEventPb{
+								Creator:    address,
+								Index:      eventPB.Index,
+								DeviceName: eventPB.DeviceName,
+								Payload:    base64.StdEncoding.EncodeToString(payloadBytes),
 							})
+							fmt.Println("BroadcastTx publish:==", response.Data, err)
 						case "subscribe":
-							res, _ := subscribe(payload.Name, payload.Path)
-							client.BroadcastTx(context.Background(), account, &ttypes.MsgCreateKv{
-								Creator: account.Name,
-								Index:   "result",
-								Value:   res,
-							})
+							res, err := subscribe(payload.Name, payload.Path)
+							if err != nil {
+								log.Println("subscribe(payload.Name, payload.Path):", err)
+								break
+							}
+							log.Println("subscribe:==", payload.Name, payload.Path, res, err)
+							payload.Result = res
+							payloadBytes, _ := json.Marshal(payload)
+							eventpb := &ttypes.MsgUpdateEventPb{
+								Creator:    address,
+								Index:      eventPB.Index,
+								DeviceName: eventPB.DeviceName,
+								Payload:    base64.StdEncoding.EncodeToString(payloadBytes),
+							}
+							response, err := client.BroadcastTx(context.Background(), account, eventpb)
+							if err != nil {
+								fmt.Println("client.BroadcastTx err ", err)
+							}
+							fmt.Println("BroadcastTx subscribe:==", response.Data, err)
 						}
 					}
 				}
