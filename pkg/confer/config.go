@@ -7,9 +7,9 @@ import (
 var Cfg = Config{}
 
 type Config struct {
-	AccountName   string `env:"ACCOUNT_NAME,required"`
-	NodeAddress   string `env:"NODE_ADDRESS,required"`
-	FaucetAddress string `env:"FAUCET_ADDRESS,required"`
+	AccountName   string `env:"ACCOUNT_NAME,required" envDefault:"thermometer"`
+	NodeAddress   string `env:"NODE_ADDRESS,required" envDefault:"https://cloudx3-iot-rpc.gw105.oneitfarm.com:443"`
+	FaucetAddress string `env:"FAUCET_ADDRESS,required" envDefault:"https://cloudx3-iot-faucet.gw105.oneitfarm.com/credit"`
 }
 
 func init() {

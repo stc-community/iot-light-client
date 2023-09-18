@@ -1,4 +1,4 @@
-package ignite
+package event
 
 import (
 	"context"
@@ -6,13 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"runtime/debug"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/go-resty/resty/v2"
-	"github.com/ignite/cli/ignite/pkg/cosmosclient"
 	ttypes "github.com/stc-community/iot-depin-protocol/x/iotdepinprotocol/types"
 	"github.com/stc-community/iot-light-client/pkg/confer"
+	"github.com/stc-community/iot-light-client/pkg/ignite"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -24,38 +25,32 @@ type Payload struct {
 	Result      string `json:"result"`
 }
 
-func Event() {
-	client, err := cosmosclient.New(context.Background(),
-		cosmosclient.WithNodeAddress(confer.Cfg.NodeAddress),
-	)
-	if err != nil {
-		log.Fatal(" cosmosclient.New(context.Background() err", err)
-	}
-	account, _ := client.Account(confer.Cfg.AccountName)
-	if account.Record == nil {
-		account, _, err = client.AccountRegistry.Create(confer.Cfg.AccountName)
-		if err != nil {
-			log.Fatal("AccountRegistry", err)
+func AcceptEvent() {
+	closeChan := make(chan interface{}) //信号监控
+	go func() {
+		for range closeChan {
+			go handleAcceptEvent(closeChan)
 		}
-	}
-	address, _ := account.Address("cosmos")
-	log.Println("address: ", address)
-	res, err := resty.New().R().
-		SetHeader("Content-Type", "application/json").
-		SetBody([]byte(fmt.Sprintf(`{"denom":"stake","address":"%s"}`, address))).
-		Post(confer.Cfg.FaucetAddress)
-	fmt.Println("Faucet:", res.String(), err)
-	_ = client.RPC.Start()
-	eventCh, err := client.RPC.Subscribe(context.Background(), "", types.QueryForEvent(types.EventTx).String())
+	}()
+	go handleAcceptEvent(closeChan)
+}
+
+func handleAcceptEvent(closeChan chan<- interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("handleMessageMetricsExporter stacktrace from panic:\n"+string(debug.Stack()), fmt.Errorf("%v", err))
+		}
+		if err := ignite.IgniteC.Client.RPC.UnsubscribeAll(context.Background(), ""); err != nil {
+			log.Fatal(err)
+		}
+		_ = ignite.IgniteC.Client.RPC.Stop()
+		closeChan <- struct{}{}
+	}()
+	_ = ignite.IgniteC.Client.RPC.Start()
+	eventCh, err := ignite.IgniteC.Client.RPC.Subscribe(context.Background(), "", types.QueryForEvent(types.EventTx).String())
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func() {
-		if err := client.RPC.UnsubscribeAll(context.Background(), ""); err != nil {
-			log.Fatal(err)
-		}
-		_ = client.RPC.Stop()
-	}()
 	for {
 		event := <-eventCh
 		txEvent, ok := event.Data.(types.EventDataTx)
@@ -90,8 +85,8 @@ func Event() {
 							//payload.Result = base64.StdEncoding.EncodeToString([]byte(res))
 							payload.Result = res
 							payloadBytes, _ := json.Marshal(payload)
-							response, err := client.BroadcastTx(context.Background(), account, &ttypes.MsgUpdateEventPb{
-								Creator:    address,
+							response, err := ignite.IgniteC.Client.BroadcastTx(context.Background(), ignite.IgniteC.Account, &ttypes.MsgUpdateEventPb{
+								Creator:    ignite.IgniteC.Address,
 								Index:      eventPB.Index,
 								DeviceName: eventPB.DeviceName,
 								Payload:    base64.StdEncoding.EncodeToString(payloadBytes),
@@ -107,12 +102,12 @@ func Event() {
 							payload.Result = res
 							payloadBytes, _ := json.Marshal(payload)
 							eventpb := &ttypes.MsgUpdateEventPb{
-								Creator:    address,
+								Creator:    ignite.IgniteC.Address,
 								Index:      eventPB.Index,
 								DeviceName: eventPB.DeviceName,
 								Payload:    base64.StdEncoding.EncodeToString(payloadBytes),
 							}
-							response, err := client.BroadcastTx(context.Background(), account, eventpb)
+							response, err := ignite.IgniteC.Client.BroadcastTx(context.Background(), ignite.IgniteC.Account, eventpb)
 							if err != nil {
 								fmt.Println("client.BroadcastTx err ", err)
 							}

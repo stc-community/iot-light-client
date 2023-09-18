@@ -3,10 +3,9 @@ package main
 import (
 	"os"
 
-	"github.com/stc-community/iot-light-client/ignite"
-
+	"github.com/stc-community/iot-light-client/event"
+	"github.com/stc-community/iot-light-client/script"
 	"github.com/urfave/cli"
-	_ "go.uber.org/automaxprocs"
 )
 
 func main() {
@@ -14,8 +13,11 @@ func main() {
 	app.Name = "iot-light-client"
 	app.Version = "1.0.0"
 	app.Author = "anonymous"
+	//app.Before = Before
+	app.Commands = script.Commands()
 	app.Action = func(c *cli.Context) error {
-		ignite.Event()
+		event.AcceptEvent()
+		event.CatchCmdSignals()
 		return nil
 	}
 	err := app.Run(os.Args)
