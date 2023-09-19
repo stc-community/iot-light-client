@@ -47,12 +47,12 @@ func GenerateThermometer(c *cli.Context) {
 	log.Printf("this thermometer mid is : %s", mid)
 }
 
-func GenerateAvg(c *cli.Context) {
+func GenerateAgv(c *cli.Context) {
 	device := Device{
-		Name:         "avg",
+		Name:         "agv",
 		Protocol:     "HTTP",
-		Address:      "avg.devices:11111",
-		DriverSku:    "avg",
+		Address:      "agv.devices:11111",
+		DriverSku:    "agv",
 		DriverImage:  "edgenesis/agv:v0.0.1",
 		Instructions: "aW5zdHJ1Y3Rpb25TZXR0aW5nczoKICBkZWZhdWx0VGltZW91dFNlY29uZHM6IDgKaW5zdHJ1Y3Rpb25zOgogIGdldF9wb3NpdGlvbjoKICBnZXRfc3RhdHVzOg==",
 		Telemetries:  "dGVsZW1ldHJpZXM6CiAgZGV2aWNlX2hlYWx0aDoKICAgIHByb3BlcnRpZXM6CiAgICAgIGluc3RydWN0aW9uOiBnZXRfc3RhdHVzCiAgICAgIGluaXRpYWxEZWxheU1zOiAxMDAwCiAgICAgIGludGVydmFsTXM6IDEwMDA=",
@@ -68,6 +68,6 @@ func GenerateAvg(c *cli.Context) {
 		log.Println("BroadcastTx err ", err)
 		return
 	}
-	log.Println("register a avg success ", response.Code)
-	log.Printf("this avg mid is : %s", mid)
+	log.Println("register a agv success ", response.Code)
+	log.Printf("this agv mid is : %s", mid)
 }

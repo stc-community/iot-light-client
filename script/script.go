@@ -14,9 +14,9 @@ func Commands() []cli.Command {
 					Action: GenerateThermometer,
 				},
 				{
-					Name:   "avg",
-					Usage:  "generate a avg",
-					Action: GenerateAvg,
+					Name:   "agv",
+					Usage:  "generate a agv",
+					Action: GenerateAgv,
 				},
 			},
 		},
