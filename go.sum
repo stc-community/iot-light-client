@@ -474,8 +474,8 @@ github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An
 github.com/spf13/viper v1.3.2/go.mod h1:ZiWeW+zYFKm7srdB9IoDzzZXaJaI5eL9QjNiN/DMA2s=
 github.com/spf13/viper v1.14.0 h1:Rg7d3Lo706X9tHsJMUjdiwMpHB7W8WnSVOssIY+JElU=
 github.com/spf13/viper v1.14.0/go.mod h1:WT//axPky3FdvXHzGw33dNdXXXfFQqmEalje+egj8As=
-github.com/stc-community/iot-depin-protocol v0.0.0-20230911061202-a4ef5ab5bfaf h1:SkRWHGswkUSGN5h3tLokRHWoYga0iVnPzzjspdWinpM=
-github.com/stc-community/iot-depin-protocol v0.0.0-20230911061202-a4ef5ab5bfaf/go.mod h1:xh8DVU6xrzMftvKckfJSe/3gd81bM2/duKDUc8Y3lkg=
+github.com/stc-community/iot-depin-protocol v0.0.0-20230919100038-b86695b6acba h1:aa9XU5yPdMAMxnAjxTdqsaprVkTMBGyiOhqkjmVpY9A=
+github.com/stc-community/iot-depin-protocol v0.0.0-20230919100038-b86695b6acba/go.mod h1:xh8DVU6xrzMftvKckfJSe/3gd81bM2/duKDUc8Y3lkg=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=

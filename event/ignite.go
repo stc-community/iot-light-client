@@ -38,7 +38,7 @@ func AcceptEvent() {
 func handleAcceptEvent(closeChan chan<- interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println("handleMessageMetricsExporter stacktrace from panic:\n"+string(debug.Stack()), fmt.Errorf("%v", err))
+			log.Println("handleAcceptEvent stacktrace from panic:\n"+string(debug.Stack()), fmt.Errorf("%v", err))
 		}
 		if err := ignite.IgniteC.Client.RPC.UnsubscribeAll(context.Background(), ""); err != nil {
 			log.Fatal(err)
@@ -46,7 +46,9 @@ func handleAcceptEvent(closeChan chan<- interface{}) {
 		_ = ignite.IgniteC.Client.RPC.Stop()
 		closeChan <- struct{}{}
 	}()
-	_ = ignite.IgniteC.Client.RPC.Start()
+	if err := ignite.IgniteC.Client.RPC.Start(); err != nil {
+		log.Fatal("ignite.IgniteC.Client.RPC.Start() err:", err)
+	}
 	eventCh, err := ignite.IgniteC.Client.RPC.Subscribe(context.Background(), "", types.QueryForEvent(types.EventTx).String())
 	if err != nil {
 		log.Fatal(err)
@@ -58,7 +60,11 @@ func handleAcceptEvent(closeChan chan<- interface{}) {
 			events := txEvent.Result.GetEvents()
 			for _, val := range events {
 				if strings.Compare(val.Type, "stccommunity.iotdepinprotocol.iotdepinprotocol.EventPb") == 0 {
-					eventPb, _ := sdk.ParseTypedEvent(val)
+					eventPb, err := sdk.ParseTypedEvent(val)
+					if err != nil {
+						log.Println("sdk.ParseTypedEvent(val) err:", err)
+						break
+					}
 					eventPB := eventPb.(*ttypes.EventPb)
 					if eventPB.DeviceName == confer.Cfg.AccountName {
 						var payload Payload

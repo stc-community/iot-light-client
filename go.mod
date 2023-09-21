@@ -7,7 +7,7 @@ require (
 	github.com/cosmos/cosmos-sdk v0.46.7
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/ignite/cli v0.26.1
-	github.com/stc-community/iot-depin-protocol v0.0.0-20230911061202-a4ef5ab5bfaf
+	github.com/stc-community/iot-depin-protocol v0.0.0-20230919100038-b86695b6acba
 	github.com/tendermint/tendermint v0.34.24
 	github.com/urfave/cli v1.22.14
 )
